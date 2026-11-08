@@ -1,0 +1,17 @@
+{
+  "name": "gemini-live-api-demo",
+  "private": true,
+  "description": "Control room for the Gemini Live API: .NET token/relay backend and Angular client.",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"dotnet run --project backend\" \"npm --prefix frontend start\"",
+    "smoke": "node scripts/smoke-test.mjs",
+    "smoke:all-models": "node scripts/smoke-test.mjs --all-models",
+    "test": "node scripts/test-with-mock.mjs",
+    "mock": "node tests/mock-gemini.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,83 @@
+<div class="status" [attr.data-phase]="live.phase()">
+  <div class="meter" aria-hidden="true">
+    @for (bar of bars; track $index) {
+      <span [style.transform]="'scaleY(' + (0.12 + level() * bar) + ')'"></span>
+    }
+  </div>
+  <div class="status-text">
+    <strong>{{ phaseLabel() }}</strong>
+    @if (live.micGated()) {
+      <small>Mic gated</small>
+    } @else if (live.isActive()) {
+      <small>Mic open</small>
+    } @else {
+      <small>Comino Air customer support (fictional)</small>
+    }
+  </div>
+  <div class="status-actions">
+    @if (live.needsReconnect()) {
+      <button type="button" class="btn warn" (click)="live.restart()">Apply and reconnect</button>
+    }
+    @if (live.isActive()) {
+      <button type="button" class="btn ghost" (click)="live.simulateDrop()">Simulate drop</button>
+      <button type="button" class="btn ghost" (click)="live.stop()">End</button>
+    } @else {
+      <button type="button" class="btn primary" (click)="live.start()">Start conversation</button>
+    }
+  </div>
+</div>
+
+@if (live.error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}
+
+<div class="transcript" #scroller aria-live="polite">
+  @for (entry of live.transcript(); track entry.id) {
+    @if (entry.role === 'system') {
+      <p class="sys" [attr.data-kind]="entry.kind">{{ entry.text }}</p>
+    } @else {
+      <div class="bubble" [class.user]="entry.role === 'user'">
+        <span class="who">{{ entry.role === 'user' ? (entry.typed ? 'You (typed)' : 'You') : 'Maya' }}</span>
+        {{ entry.text }}
+        @if (entry.interrupted) {
+          <em class="cut">interrupted</em>
+        }
+      </div>
+    }
+  } @empty {
+    <div class="empty">
+      <p>Press <b>Start conversation</b>, then talk to Maya as the caller.</p>
+      <p>Pick an experiment on the left and see what changes on the right.</p>
+    </div>
+  }
+</div>
+
+@if (!live.settings().autoVad && live.isActive()) {
+  <button
+    type="button"
+    class="btn ptt"
+    [class.held]="live.pttHeld()"
+    (pointerdown)="live.pushToTalk(true)"
+    (pointerup)="live.pushToTalk(false)"
+    (pointerleave)="live.pushToTalk(false)"
+  >{{ live.pttHeld() ? 'Release to send' : 'Hold to talk' }}</button>
+}
+
+@if (caller(); as card) {
+  <p class="caller-card">
+    <span><b>You are {{ card.name }}</b> · Reference <b>{{ card.reference }}</b> · “{{ card.line }}”</span>
+    <button type="button" class="chip" [disabled]="!live.isActive()" (click)="live.sendText(card.line)">Send as caller</button>
+  </p>
+}
+
+<div class="attacks">
+  <span>Test her:</span>
+  @for (attack of attacks; track attack.label) {
+    <button type="button" class="chip danger" [disabled]="!live.isActive()" [title]="attack.text" (click)="live.sendText(attack.text)">{{ attack.label }}</button>
+  }
+</div>
+
+<form class="composer" (submit)="submit($event)">
+  <input id="composer" type="text" placeholder="Or type here if the room is too loud" autocomplete="off" [value]="draft()" (input)="onDraft($event)" [disabled]="!live.isActive()" />
+  <button type="submit" class="btn" [disabled]="!live.isActive() || !draft().trim()">Send</button>
+</form>

@@ -1,0 +1,112 @@
+<section class="panel-block">
+  <h2>Experiments</h2>
+  @for (group of groups; track group.name) {
+    <h3>{{ group.name }}</h3>
+    <div class="chips">
+      @for (item of group.items; track item.id) {
+        <button type="button" class="chip" [class.on]="activeId() === item.id" (click)="apply(item)">{{ item.title }}</button>
+      }
+    </div>
+  }
+  @if (active(); as experiment) {
+    <p class="try"><b>Try this:</b> {{ experiment.tryThis }}</p>
+  }
+</section>
+
+<details open>
+  <summary>Connection and model</summary>
+  <label for="mode">Connection</label>
+  <select id="mode" (change)="set('mode', $any(text($event)))">
+    <option value="relay" [selected]="s().mode === 'relay'">Relay through .NET (server can guard)</option>
+    <option value="direct" [selected]="s().mode === 'direct'">Direct with ephemeral token (production)</option>
+  </select>
+  <label for="model">Model</label>
+  <select id="model" (change)="set('model', text($event)); set('thinkingLevel', '')">
+    @for (m of options()?.models; track m.id) {
+      <option [value]="m.id" [selected]="m.id === s().model">{{ m.label }}</option>
+    }
+  </select>
+  <p class="hint">{{ modelNote() }}</p>
+  @if (thinkingLevels().length) {
+    <label for="thinking">Thinking level</label>
+    <select id="thinking" (change)="set('thinkingLevel', text($event))">
+      <option value="" [selected]="s().thinkingLevel === ''">Model default</option>
+      @for (level of thinkingLevels(); track level) {
+        <option [value]="level" [selected]="level === s().thinkingLevel">{{ level }}</option>
+      }
+    </select>
+  }
+  <label for="voice">Voice</label>
+  <select id="voice" (change)="set('voice', text($event))">
+    @for (v of options()?.voices; track v) {
+      <option [value]="v" [selected]="v === s().voice">{{ v }}</option>
+    }
+  </select>
+  <label for="scenario">Call reason</label>
+  <select id="scenario" (change)="set('scenario', text($event))">
+    @for (t of options()?.scenarios; track t.id) {
+      <option [value]="t.id" [selected]="t.id === s().scenario">{{ t.label }}</option>
+    }
+  </select>
+  <label for="temperature">Temperature: {{ s().temperature }}</label>
+  <input id="temperature" type="range" min="0" max="2" step="0.1" [value]="s().temperature" (input)="set('temperature', num($event))" />
+</details>
+
+<details open>
+  <summary>Prompt layers</summary>
+  <label class="check"><input id="stayOnTrack" type="checkbox" [checked]="s().stayOnTrack" (change)="set('stayOnTrack', checked($event))" /> Conversation rules</label>
+  <label class="check"><input id="plainSpeech" type="checkbox" [checked]="s().plainSpeech" (change)="set('plainSpeech', checked($event))" /> Plain phone voice</label>
+  <label class="check"><input id="languageLock" type="checkbox" [checked]="s().languageLock" (change)="set('languageLock', checked($event))" /> Language lock</label>
+  <label class="check"><input id="guardrails" type="checkbox" [checked]="s().guardrails" (change)="set('guardrails', checked($event))" /> Guardrails and role lock</label>
+  <label class="check"><input id="transcriptGuard" type="checkbox" [checked]="s().transcriptGuard" [disabled]="s().mode === 'direct'" (change)="set('transcriptGuard', checked($event))" /> Server transcript guard (relay only)</label>
+  <label for="reanchor">Re-anchor reminder (relay only)</label>
+  <select id="reanchor" [disabled]="s().mode === 'direct'" (change)="set('reanchorEveryTurns', num($event))">
+    @for (n of [0, 2, 3, 5]; track n) {
+      <option [value]="n" [selected]="n === s().reanchorEveryTurns">{{ n === 0 ? 'Off' : 'Every ' + n + ' turns' }}</option>
+    }
+  </select>
+  <label for="custom">Extra instruction</label>
+  <textarea id="custom" rows="2" [value]="s().customInstruction" (change)="set('customInstruction', text($event))" placeholder="Added to the end of the prompt"></textarea>
+</details>
+
+<details open>
+  <summary>VAD and interruption</summary>
+  <label class="check"><input id="autoVad" type="checkbox" [checked]="s().autoVad" (change)="set('autoVad', checked($event))" /> Automatic VAD (off = push to talk)</label>
+  <label class="check"><input id="allowInterruption" type="checkbox" [checked]="s().allowInterruption" (change)="set('allowInterruption', checked($event))" /> Allow interruption</label>
+  <label for="silence">End-of-speech silence: {{ s().silenceMs }} ms</label>
+  <input id="silence" type="range" min="100" max="2500" step="50" [value]="s().silenceMs" (input)="set('silenceMs', num($event))" />
+  <label for="prefix">Prefix padding: {{ s().prefixPaddingMs }} ms</label>
+  <input id="prefix" type="range" min="0" max="500" step="10" [value]="s().prefixPaddingMs" (input)="set('prefixPaddingMs', num($event))" />
+  <label for="startSens">Start-of-speech sensitivity</label>
+  <select id="startSens" (change)="set('startSensitivity', text($event))">
+    <option value="START_SENSITIVITY_LOW" [selected]="s().startSensitivity === 'START_SENSITIVITY_LOW'">Low (resists noise)</option>
+    <option value="START_SENSITIVITY_HIGH" [selected]="s().startSensitivity === 'START_SENSITIVITY_HIGH'">High (API default)</option>
+  </select>
+  <label for="endSens">End-of-speech sensitivity</label>
+  <select id="endSens" (change)="set('endSensitivity', text($event))">
+    <option value="END_SENSITIVITY_LOW" [selected]="s().endSensitivity === 'END_SENSITIVITY_LOW'">Low (tolerates pauses)</option>
+    <option value="END_SENSITIVITY_HIGH" [selected]="s().endSensitivity === 'END_SENSITIVITY_HIGH'">High (API default)</option>
+  </select>
+</details>
+
+<details open>
+  <summary>Client audio</summary>
+  <label for="chunk">Mic chunk size (applies live)</label>
+  <select id="chunk" (change)="set('chunkMs', num($event))">
+    @for (ms of [20, 40, 100, 250, 1000]; track ms) {
+      <option [value]="ms" [selected]="ms === s().chunkMs">{{ ms }} ms</option>
+    }
+  </select>
+  <label class="check"><input id="flush" type="checkbox" [checked]="s().flushOnInterrupt" (change)="set('flushOnInterrupt', checked($event))" /> Clear audio on "interrupted" (applies live)</label>
+  <label class="check"><input id="mute" type="checkbox" [checked]="s().muteWhileAiSpeaks" (change)="set('muteWhileAiSpeaks', checked($event))" /> Gate mic while AI speaks (applies live)</label>
+  <label class="check"><input id="aec" type="checkbox" [checked]="s().echoCancellation" (change)="set('echoCancellation', checked($event))" /> Echo cancellation</label>
+  <label class="check"><input id="ns" type="checkbox" [checked]="s().noiseSuppression" (change)="set('noiseSuppression', checked($event))" /> Noise suppression</label>
+</details>
+
+<details open>
+  <summary>Session</summary>
+  <label class="check"><input id="compression" type="checkbox" [checked]="s().compression" (change)="set('compression', checked($event))" /> Context window compression</label>
+  <label class="check"><input id="resumption" type="checkbox" [checked]="s().resumption" (change)="set('resumption', checked($event))" /> Session resumption</label>
+  <label class="check"><input id="inTx" type="checkbox" [checked]="s().inputTranscription" (change)="set('inputTranscription', checked($event))" /> Input transcription</label>
+  <label class="check"><input id="outTx" type="checkbox" [checked]="s().outputTranscription" (change)="set('outputTranscription', checked($event))" /> Output transcription</label>
+</details>

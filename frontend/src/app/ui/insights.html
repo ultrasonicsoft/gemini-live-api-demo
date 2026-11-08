@@ -1,0 +1,43 @@
+<div class="tiles">
+  <div class="tile big">
+    <span class="k">Response latency</span>
+    <span class="v">{{ ms(live.lastLatency()) }}</span>
+    <span class="d">You stop speaking → first audio</span>
+    <div class="spark" aria-hidden="true">
+      @for (value of live.latencies(); track $index) {
+        <span [style.height.%]="(value / maxLatency()) * 100"></span>
+      }
+    </div>
+  </div>
+  <div class="tile"><span class="k">Connect</span><span class="v sm">{{ ms(live.connectMs()) }}</span></div>
+  <div class="tile"><span class="k">Queued speech</span><span class="v sm">{{ audio.queuedMs() }} ms</span></div>
+  <div class="tile"><span class="k">Mic upstream</span><span class="v sm">{{ live.upstreamRate().messages }}/s · {{ live.upstreamRate().kilobytes }} kB/s</span></div>
+  <div class="tile"><span class="k">Interruptions</span><span class="v sm">{{ live.interruptions() }}</span></div>
+  <div class="tile"><span class="k">Context tokens</span><span class="v sm">{{ live.promptTokens() ?? '–' }}</span></div>
+  <div class="tile"><span class="k">Guard events</span><span class="v sm">{{ live.guardHits() }}</span></div>
+  <div class="tile"><span class="k">Session</span><span class="v sm">{{ live.sessionSeconds() }} s</span></div>
+  <div class="tile"><span class="k">Resume handle</span><span class="v sm">{{ live.hasHandle() ? 'Stored' : 'None' }}</span></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button type="button" role="tab" [class.on]="tab() === 'events'" [attr.aria-selected]="tab() === 'events'" (click)="tab.set('events')">Events</button>
+  <button type="button" role="tab" [class.on]="tab() === 'setup'" [attr.aria-selected]="tab() === 'setup'" (click)="tab.set('setup')">Setup JSON</button>
+  <button type="button" role="tab" [class.on]="tab() === 'prompt'" [attr.aria-selected]="tab() === 'prompt'" (click)="tab.set('prompt')">Prompt</button>
+</div>
+
+<div class="tab-body">
+  @switch (tab()) {
+    @case ('events') {
+      @for (row of live.log(); track row.id) {
+        <div class="log" [class.hot]="row.hot">
+          <span>{{ row.time }}</span>
+          <span>{{ row.label }}@if (row.count > 1) { <b>×{{ row.count }}</b> }</span>
+        </div>
+      } @empty {
+        <p class="hint">Live API messages appear here. Audio data is summarized.</p>
+      }
+    }
+    @case ('setup') { <pre>{{ setupJson() }}</pre> }
+    @case ('prompt') { <pre class="wrap">{{ promptText() }}</pre> }
+  }
+</div>

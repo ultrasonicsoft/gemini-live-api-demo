@@ -1,0 +1,18 @@
+# Secrets: never commit your real key
+.env
+.env.local
+
+# Build output
+node_modules/
+dist/
+.angular/
+backend/bin/
+backend/obj/
+
+# OS / editor
+.DS_Store
+*.log
+~$*.pptx
+
+# Talk materials: speaker notes and plan stay private
+presentation/
